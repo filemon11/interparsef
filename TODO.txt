@@ -1,0 +1,2 @@
+- implement automatic attribute for containers
+- implement automatic action for counters (+1), states(state[transition]) 
