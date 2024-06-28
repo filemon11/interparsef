@@ -1,6 +1,6 @@
 from representations import Representation, Token
 
-from typing import List, TypeVar, Generic, Iterable, FrozenSet, Mapping, Tuple, DefaultDict, Self, Any, Sized, Iterator, overload, Sequence
+from typing import List, TypeVar, Generic, Iterable, FrozenSet, Mapping, Sequence
 from abc import ABC, abstractmethod, abstractproperty
 
 A = TypeVar('A')
@@ -71,7 +71,7 @@ class RepresentationHolder(Container[T]):
         ...
 
     @abstractproperty
-    def scope(self) -> Tuple[Tuple[int, ...], ...]:
+    def scope(self) -> tuple[tuple[int, ...], ...]:
         ...
 
 class OrderedRepresentationHolder(RepresentationHolder[T], Sequence):
@@ -85,11 +85,11 @@ class OrderedRepresentationHolder(RepresentationHolder[T], Sequence):
         return self.top
 
     @property
-    def scope(self) -> Tuple[Tuple[int, ...], ...]:
+    def scope(self) -> tuple[tuple[int, ...], ...]:
         num_retrieve : int = min(self._scope_size, len(self))
         num_padding : int = self._scope_size - num_retrieve
 
-        scope : Tuple[Tuple[int, ...], ...] = tuple(rpr.scope for rpr in self[-num_retrieve:])
+        scope : tuple[tuple[int, ...], ...] = tuple(rpr.scope for rpr in self[-num_retrieve:])
 
         return scope + tuple(num_padding * ((-1,),)) 
 
@@ -111,7 +111,7 @@ class Stack(tuple[T], OrderedRepresentationHolder[T]):
         "TODO"
         return(Stack((*self, item)))
     
-    def pop(self) -> Tuple["Stack[T]", T]:
+    def pop(self) -> tuple["Stack[T]", T]:
         "TODO"
         return Stack(self[:-1]), self[-1]
     
@@ -146,7 +146,7 @@ class Buffer(tuple[T], OrderedRepresentationHolder[T]):
         self._scope_size : int = scope_size
 
 
-    def next(self) -> Tuple["Buffer[T]", T]:
+    def next(self) -> tuple["Buffer[T]", T]:
         new_buffer : Buffer = Buffer(self, self._curr_idx + 1)
         return new_buffer, self[self._curr_idx]
     
@@ -176,7 +176,7 @@ class IntBuffer(Buffer[Token]):
         super().__init__(tuple(), start_idx, scope_size, name)
         self._max_idx : int = max_idx
 
-    def next(self) -> Tuple["IntBuffer", Token]:
+    def next(self) -> tuple["IntBuffer", Token]:
         if self.empty:
             raise Exception
         
@@ -195,11 +195,11 @@ class IntBuffer(Buffer[Token]):
         return Token(self._curr_idx)
     
     @property
-    def scope(self) -> Tuple[Tuple[int, ...], ...]:
+    def scope(self) -> tuple[tuple[int, ...], ...]:
         num_retrieve : int = min(self._scope_size, len(self))
         num_padding : int = self._scope_size - num_retrieve
 
-        scope : Tuple[Tuple[int, ...], ...] = tuple((i,) for i in range(self._curr_idx, self._curr_idx + num_retrieve))
+        scope : tuple[tuple[int, ...], ...] = tuple((i,) for i in range(self._curr_idx, self._curr_idx + num_retrieve))
 
         return scope + tuple(num_padding * ((-1,),))
     
@@ -248,13 +248,13 @@ class RepSet(FrozenSet[T], RepresentationHolder[T]):
         return len(self) != 0
     
     @property
-    def scope(self) -> Tuple[Tuple[int, ...], ...]:
+    def scope(self) -> tuple[tuple[int, ...], ...]:
         return tuple(rpr.scope for rpr in self)
 
     def _format(self, token_info : None | Mapping[int, str] = None) -> str:
         return ','.join([ccandidate.format(token_info) for ccandidate in self])
     
-class SingleElement(Tuple[T], OrderedRepresentationHolder[T]):
+class SingleElement(tuple[T], OrderedRepresentationHolder[T]):
     def __new__ (cls, item : T | None = None, name : str | None = None) -> "SingleElement":
         if item is None:
             return super(SingleElement, cls).__new__(cls, tuple()) # type: ignore
@@ -266,7 +266,7 @@ class SingleElement(Tuple[T], OrderedRepresentationHolder[T]):
         self._name = name
         self._element : T | None = item
 
-    def replace(self, item : T | None) -> Tuple["SingleElement", T | None]:
+    def replace(self, item : T | None) -> tuple["SingleElement", T | None]:
         return SingleElement(item), self._element
     
     @property
@@ -278,7 +278,7 @@ class SingleElement(Tuple[T], OrderedRepresentationHolder[T]):
         return self._element
 
     @property
-    def scope(self) -> Tuple[Tuple[int, ...], ...]:
+    def scope(self) -> tuple[tuple[int, ...], ...]:
         if self.empty:
             return ((-1,),)
         else:

@@ -2,7 +2,7 @@
 from transitions import Transition
 from containers import Container
 
-from typing import List, TypeVar, Generic, Iterable, FrozenSet, Mapping, Tuple, DefaultDict, Self, Type
+from typing import TypeVar, Mapping, DefaultDict, Type
 
 Tr = TypeVar('Tr', bound = Transition)
 

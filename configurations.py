@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 
-from representations import Representation, Token, Candidate, Constituent
+from representations import Representation, Token, Candidate, Constituent, Node, Label
 from containers import Container, Buffer, Stack, RepSet, SingleElement, IntBuffer, Counter, RepresentationHolder
 
-from typing import Iterable, TypeVar, TypeVarTuple, Mapping, Set, FrozenSet, Generic, TypedDict, Dict, Tuple, Any
+from typing import Iterable, TypeVar, TypeVarTuple, Mapping
 
 T = TypeVar('T', bound = Representation)
 C = TypeVar('C', bound = Container)
@@ -19,7 +19,7 @@ class Configuration(tuple[*Cs]):
         pass
     
     @property
-    def scope(self) -> Tuple[Tuple[Tuple[int, ...], ...], ...]:
+    def scope(self) -> tuple[tuple[tuple[int, ...], ...], ...]:
         return tuple(container.scope for container in self if isinstance(container, RepresentationHolder))
     
     def format(self : tuple[*Cs], token_info : Mapping[int, str] | None = None, padding : int = 10,
@@ -57,12 +57,23 @@ class SetConfiguration(Configuration[IntBuffer, SingleElement[Candidate],
     
     def format(self, token_info : Mapping[int, str] | None = None, padding : int = 10,
                show_name : bool = False, delimiter : str = " || ") -> str:
-        return f"{delimiter.join([
-                                self.repset.format(token_info, -padding, show_name), 
-                                self.focus.format(token_info, show_name = show_name),
-                                self.buffer.format(token_info, show_name),
-                                self.labelled.format(token_info, padding, show_name)
-                                ])} : {self.step.format(show_name = show_name)}"
+        return delimiter.join((self.repset.format(token_info, -padding, show_name), 
+                               self.focus.format(token_info, show_name = show_name),
+                               self.buffer.format(token_info, show_name),
+                               self.labelled.format(token_info, padding, show_name),
+                               )) + " : " + self.step.format(show_name = show_name)
+    
+class IncrementalConfiguration(Configuration[IntBuffer, Stack[Node[Token | Label]], 
+                                             Stack[Node[Token | Label]], Stack[Node[Token | Label]], 
+                                             Counter]):
+    def __init__(self, buffer : IntBuffer, stack : Stack[Node[Token | Label]], 
+                 lstack : Stack[Node[Token | Label]], rstack : Stack[Node[Token | Label]], step : Counter = Counter(0)) -> None:
+        super().__init__(buffer, stack, lstack, rstack, step)
+        self.buffer : IntBuffer = self[0]
+        self.stack : Stack[Node[Token | Label]] = self[1]
+        self.lstack : Stack[Node[Token | Label]] = self[2]
+        self.rstack : Stack[Node[Token | Label]] = self[3]
+        self.step : Counter = self[4]
     
 def init_SetConfiguration(num_tokens : int) -> SetConfiguration:
     buffer : IntBuffer = IntBuffer(num_tokens, name = "Buffer")
@@ -71,3 +82,11 @@ def init_SetConfiguration(num_tokens : int) -> SetConfiguration:
     labelled : RepSet[Constituent] = RepSet(name = "Constituents")
     step : Counter = Counter(name = "Step")
     return SetConfiguration(buffer, focus, repset, labelled, step)
+
+def init_IncrementalConfiguration(num_tokens : int) -> IncrementalConfiguration:
+    buffer : IntBuffer = IntBuffer(num_tokens, name = "Buffer")
+    stack : Stack[Node[Token | Label]] = Stack(None, name = "Stack")
+    lstack : Stack[Node[Token | Label]] = Stack(None, name = "L")
+    rstack : Stack[Node[Token | Label]] = Stack(None, name = "R")
+    step : Counter = Counter(name = "Step")
+    return IncrementalConfiguration(buffer, stack, lstack, rstack, step)
